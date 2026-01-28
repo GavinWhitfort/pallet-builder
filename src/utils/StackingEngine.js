@@ -204,20 +204,24 @@ function calculateSupportPercentage(upperBox, lowerLayer) {
 }
 
 // Check if a box can be safely placed on a layer
-function canPlaceOnLayer(box, layer, palletWidth, palletDepth) {
+function canPlaceOnLayer(box, layer, palletWidth, palletDepth, strategy = 'hybrid') {
     if (layer.length === 0) return true; // Ground level always OK
+
+    // Strategy-based support requirements
+    const supportThreshold = strategy === 'lowest' ? 0.5 : strategy === 'stable' ? 0.8 : MIN_SUPPORT_PERCENTAGE;
+    const maxWeightOnFragile = strategy === 'lowest' ? 50 : strategy === 'stable' ? 20 : 30;
 
     // Check fragility: never place heavy boxes on fragile ones
     const maxFragilityBelow = Math.max(...layer.map(b => b.fragileRating || 5));
     const currentRigidity = box.rigidityRating || 5;
     
-    if (maxFragilityBelow > 7 && box.weight > 30) {
+    if (maxFragilityBelow > 7 && box.weight > maxWeightOnFragile) {
         return false; // Too heavy for fragile items below
     }
 
     // Check support percentage
     const support = calculateSupportPercentage(box, layer);
-    if (support < MIN_SUPPORT_PERCENTAGE) {
+    if (support < supportThreshold) {
         return false; // Insufficient support
     }
 
@@ -276,20 +280,37 @@ function calculateStabilityScore(layers, palletWidth, palletDepth) {
 }
 
 // Main layer-based packing function
-function packSinglePallet(boxes, pallet) {
+function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
     const layers = [];
     let remaining = [...boxes];
     let currentHeight = pallet.height;
     
-    // Special handling for WaterRower products (keep together)
+    // Strategy-based sorting
     const waterRowerBoxes = remaining.filter(b => 
         b.productId && (b.productId.startsWith('wr-') || b.productId.includes('waterrower'))
     );
     const otherBoxes = remaining.filter(b => !waterRowerBoxes.includes(b));
     
-    // Sort by weight (heaviest first for base layer)
-    remaining = [...waterRowerBoxes.sort((a, b) => b.weight - a.weight), 
-                 ...otherBoxes.sort((a, b) => b.weight - a.weight)];
+    // Sort based on strategy
+    if (strategy === 'lowest') {
+        // Lowest profile: prioritize flat items, sort by height (shortest first)
+        remaining = [
+            ...waterRowerBoxes.sort((a, b) => a.height - b.height),
+            ...otherBoxes.sort((a, b) => a.height - b.height)
+        ];
+    } else if (strategy === 'stable') {
+        // Most stable: heaviest on bottom, sort by weight and rigidity
+        remaining = [
+            ...waterRowerBoxes.sort((a, b) => (b.weight * (b.rigidityRating || 5)) - (a.weight * (a.rigidityRating || 5))),
+            ...otherBoxes.sort((a, b) => (b.weight * (b.rigidityRating || 5)) - (a.weight * (a.rigidityRating || 5)))
+        ];
+    } else {
+        // Hybrid: balance weight and height
+        remaining = [
+            ...waterRowerBoxes.sort((a, b) => b.weight - a.weight),
+            ...otherBoxes.sort((a, b) => b.weight - a.weight)
+        ];
+    }
 
     let attemptCount = 0;
     const maxAttempts = 100;
@@ -335,7 +356,7 @@ function packSinglePallet(boxes, pallet) {
 
         // Validate layer stability
         const validPlaced = placed.filter(box => 
-            canPlaceOnLayer(box, layers.length > 0 ? layers[layers.length - 1] : [], pallet.width, pallet.depth)
+            canPlaceOnLayer(box, layers.length > 0 ? layers[layers.length - 1] : [], pallet.width, pallet.depth, strategy)
         );
 
         if (validPlaced.length === 0) {
@@ -400,7 +421,7 @@ function packSinglePallet(boxes, pallet) {
     };
 }
 
-export function calculateVisGeometry(items, palletType = 'AU_CHEP') {
+export function calculateVisGeometry(items, palletType = 'AU_CHEP', strategy = 'hybrid') {
     const pallet = PALLET_TYPES[palletType];
     
     // Flatten items with quantities
@@ -460,7 +481,7 @@ export function calculateVisGeometry(items, palletType = 'AU_CHEP') {
     while (currentQueue.length > 0 && safetyCounter < 50) {
         safetyCounter++;
         
-        const result = packSinglePallet(currentQueue, pallet);
+        const result = packSinglePallet(currentQueue, pallet, strategy);
         
         if (result.arranged.length === 0) {
             // Can't pack first item, skip it to prevent infinite loop

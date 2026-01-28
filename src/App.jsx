@@ -104,6 +104,7 @@ function App() {
   const [currentPalletIndex, setCurrentPalletIndex] = useState(0);
   const [productSettings, setProductSettings] = useState({}); // { 'productId-boxIndex': { width, depth, height, weight, allowEdge, forceRotation } }
   const [openSettingsId, setOpenSettingsId] = useState(null);
+  const [packingStrategy, setPackingStrategy] = useState('hybrid');
 
   const allPallets = useMemo(() => {
     const flattenedItems = [];
@@ -152,9 +153,9 @@ function App() {
       });
     }
 
-    const calculated = calculateVisGeometry(flattenedItems, palletType);
+    const calculated = calculateVisGeometry(flattenedItems, palletType, packingStrategy);
     return calculated;
-  }, [items, palletType, productSettings]);
+  }, [items, palletType, productSettings, packingStrategy]);
 
   const visData = useMemo(() => {
     if (allPallets.length === 0) {
@@ -347,6 +348,49 @@ function App() {
                 <option key={k} value={k}>{PALLET_TYPES[k].name}</option>
               ))}
             </select>
+
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '0.9rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Settings size={16} /> Packing Strategy
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="2" 
+                  step="1" 
+                  value={packingStrategy === 'lowest' ? 0 : packingStrategy === 'hybrid' ? 1 : 2}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setPackingStrategy(val === 0 ? 'lowest' : val === 1 ? 'hybrid' : 'stable');
+                  }}
+                  style={{ 
+                    flex: 1,
+                    height: '4px',
+                    background: `linear-gradient(to right, #3b82f6, #eab308, #10b981)`,
+                    borderRadius: '2px',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#9ca3af' }}>
+                <span style={{ fontWeight: packingStrategy === 'lowest' ? 'bold' : 'normal', color: packingStrategy === 'lowest' ? '#3b82f6' : '#9ca3af' }}>
+                  Lowest Profile
+                </span>
+                <span style={{ fontWeight: packingStrategy === 'hybrid' ? 'bold' : 'normal', color: packingStrategy === 'hybrid' ? '#eab308' : '#9ca3af' }}>
+                  Hybrid
+                </span>
+                <span style={{ fontWeight: packingStrategy === 'stable' ? 'bold' : 'normal', color: packingStrategy === 'stable' ? '#10b981' : '#9ca3af' }}>
+                  Most Stable
+                </span>
+              </div>
+              <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#6b7280', fontStyle: 'italic' }}>
+                {packingStrategy === 'lowest' && '📦 Prioritizes minimizing height, allows tighter stacking'}
+                {packingStrategy === 'hybrid' && '⚖️ Balances height and stability for general use'}
+                {packingStrategy === 'stable' && '🛡️ Prioritizes safety with conservative stacking'}
+              </div>
+            </div>
           </section>
 
           <section className="card inventory-card">
