@@ -111,19 +111,43 @@ function packSinglePallet(queue, pallet, presetOrientations = new Map()) {
 
                 let score = (maxY * 100) + (centeringPenalty * 10);
 
-                // PRIORITY 1: Stack identical items directly on top of each other
-                if (maxY > 0 && topProductId === box.productId && topBoxIndex === box.boxIndex) {
-                    score -= 10000000; // Huge bonus for stacking same items
-                }
+                // SPECIAL: WaterRower tank boxes (S4 and A1 box 0) should go side-by-side on ground
+                const isWaterRowerTank = (box.productId === 'wr-s4' || box.productId === 'wr-a1') && box.boxIndex === 0;
+                const isOnOtherWaterRowerTank = (topProductId === 'wr-s4' || topProductId === 'wr-a1') && topBoxIndex === 0;
                 
-                // PRIORITY 2: Prefer ground level for first items
-                if (maxY === 0) {
-                    score -= 5000000;
-                }
-                
-                // PENALTY: Avoid stacking on different items
-                if (maxY > 0 && (topProductId !== box.productId || topBoxIndex !== box.boxIndex)) {
-                    score += 3000000;
+                if (isWaterRowerTank) {
+                    // Strongly prefer ground level for WaterRower tanks
+                    if (maxY === 0) {
+                        score -= 8000000;
+                    }
+                    // NEVER stack WaterRower tanks on top of each other
+                    if (maxY > 0 && isOnOtherWaterRowerTank) {
+                        score += 50000000; // Massive penalty
+                    }
+                    // Prefer positions next to other WaterRower tanks (side by side)
+                    const adjacentTanks = arranged.filter(i => 
+                        (i.productId === 'wr-s4' || i.productId === 'wr-a1') && 
+                        i.boxIndex === 0 &&
+                        Math.abs((i.position[1] - i.height / 2) - pallet.height) < 5
+                    ).length;
+                    if (maxY === 0 && adjacentTanks > 0) {
+                        score -= 2000000; // Bonus for being next to other tanks on ground
+                    }
+                } else {
+                    // PRIORITY 1: Stack identical items directly on top of each other
+                    if (maxY > 0 && topProductId === box.productId && topBoxIndex === box.boxIndex) {
+                        score -= 10000000; // Huge bonus for stacking same items
+                    }
+                    
+                    // PRIORITY 2: Prefer ground level for first items
+                    if (maxY === 0) {
+                        score -= 5000000;
+                    }
+                    
+                    // PENALTY: Avoid stacking on different items
+                    if (maxY > 0 && (topProductId !== box.productId || topBoxIndex !== box.boxIndex)) {
+                        score += 3000000;
+                    }
                 }
 
                 if (score < bestScore) {
