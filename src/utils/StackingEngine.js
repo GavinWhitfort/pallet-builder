@@ -90,9 +90,8 @@ function packSinglePallet(queue, pallet, presetOrientations = new Map()) {
             for (let r = 0; r <= rows - br; r++) {
                 let maxY = 0;
                 let topProductId = null;
-
-                let topProductId = null;
                 let topBoxIndex = null;
+                
                 for (let ic = c; ic < c + bc; ic++) {
                     for (let ir = r; ir < r + br; ir++) {
                         if (grid[ic][ir].y > maxY) {
