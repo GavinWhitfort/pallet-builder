@@ -494,3 +494,184 @@ body {
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-container {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .header {
+    height: auto;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+  }
+
+  .logo img {
+    height: 30px !important;
+  }
+
+  .pallet-selector {
+    width: 100%;
+  }
+
+  .pallet-selector select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .main-grid {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .controls {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 15px;
+    overflow-y: visible;
+    max-height: none;
+  }
+
+  .visualizer {
+    height: 60vh;
+    min-height: 400px;
+    order: -1; /* Show 3D view first on mobile */
+  }
+
+  .vis-overlay {
+    top: 10px;
+    right: 10px;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+
+  .pallet-nav {
+    bottom: 15px;
+    padding: 8px 16px;
+    gap: 12px;
+  }
+
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+
+  .nav-info {
+    font-size: 0.8rem;
+    min-width: 100px;
+  }
+
+  /* Larger touch targets */
+  .catalog-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .qty-ctrl button {
+    padding: 8px 12px;
+    font-size: 1rem;
+  }
+
+  .del-btn,
+  .settings-btn {
+    padding: 8px;
+  }
+
+  /* Better card spacing */
+  .card {
+    padding: 12px;
+  }
+
+  .card h3 {
+    font-size: 0.85rem;
+  }
+
+  /* Settings on mobile */
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-field input {
+    padding: 8px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Inventory list more compact */
+  .inventory-list {
+    max-height: none;
+  }
+
+  .inv-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .inv-name {
+    flex: 1 1 100%;
+    margin-bottom: 4px;
+  }
+
+  /* Shipping inputs */
+  .ship-row {
+    flex-direction: column;
+  }
+
+  .ship-row input {
+    padding: 10px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .calc-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  /* Stats grid */
+  .stats {
+    grid-template-columns: 1fr;
+    font-size: 0.9rem;
+  }
+
+  .stat.full-width {
+    grid-column: span 1;
+  }
+
+  /* Catalog groups */
+  .group-title {
+    font-size: 0.75rem;
+    margin-top: 12px;
+  }
+
+  /* Search input */
+  input[type="text"] {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+
+  /* Product settings */
+  .product-settings {
+    padding: 10px;
+  }
+
+  .settings-actions-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .rotate-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
