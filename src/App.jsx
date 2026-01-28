@@ -256,19 +256,49 @@ function App() {
         <div className="logo">
           <img src="/logo.png" alt="WaterRower | NOHrD" style={{ height: '40px', filter: 'brightness(0) invert(1)' }} />
         </div>
-        <div className="pallet-selector">
-          <label>Pallet Type:</label>
-          <select value={palletType} onChange={e => setPalletType(e.target.value)}>
-            {Object.keys(PALLET_TYPES).map(k => (
-              <option key={k} value={k}>{PALLET_TYPES[k].name}</option>
-            ))}
-          </select>
-        </div>
       </header>
 
       <main className="main-grid">
+        {/* Right 3D View */}
+        <div className="visualizer">
+          <Pallet3D data={visData} />
+
+          <div className="vis-overlay">
+            <span className="badge">Pallet: <strong>{(PALLET_TYPES[palletType].width / 10).toFixed(1)}x{(PALLET_TYPES[palletType].depth / 10).toFixed(1)} cm</strong></span>
+          </div>
+
+          {allPallets.length > 1 && (
+            <div className="pallet-nav">
+              <button
+                disabled={currentPalletIndex === 0}
+                onClick={() => setCurrentPalletIndex(prev => prev - 1)}
+                className="nav-btn"
+              >
+                ←
+              </button>
+              <div className="nav-info">Pallet {currentPalletIndex + 1} of {allPallets.length}</div>
+              <button
+                disabled={currentPalletIndex === allPallets.length - 1}
+                onClick={() => setCurrentPalletIndex(prev => prev + 1)}
+                className="nav-btn"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Left Control Panel */}
         <div className="controls">
+          <section className="card pallet-type-card">
+            <h3><BoxIcon size={18} /> Pallet Type</h3>
+            <select className="pallet-type-select" value={palletType} onChange={e => setPalletType(e.target.value)}>
+              {Object.keys(PALLET_TYPES).map(k => (
+                <option key={k} value={k}>{PALLET_TYPES[k].name}</option>
+              ))}
+            </select>
+          </section>
+
           <section className="card inventory-card">
             <h3><Package size={18} /> Manifest ({items.reduce((a, b) => a + b.quantity, 0)} items)</h3>
             <div className="inventory-list">
@@ -487,35 +517,6 @@ function App() {
               </div>
             )}
           </section>
-        </div>
-
-        {/* Right 3D View */}
-        <div className="visualizer">
-          <Pallet3D data={visData} />
-
-          <div className="vis-overlay">
-            <span className="badge">Pallet: <strong>{(PALLET_TYPES[palletType].width / 10).toFixed(1)}x{(PALLET_TYPES[palletType].depth / 10).toFixed(1)} cm</strong></span>
-          </div>
-
-          {allPallets.length > 1 && (
-            <div className="pallet-nav">
-              <button
-                disabled={currentPalletIndex === 0}
-                onClick={() => setCurrentPalletIndex(prev => prev - 1)}
-                className="nav-btn"
-              >
-                ←
-              </button>
-              <div className="nav-info">Pallet {currentPalletIndex + 1} of {allPallets.length}</div>
-              <button
-                disabled={currentPalletIndex === allPallets.length - 1}
-                onClick={() => setCurrentPalletIndex(prev => prev + 1)}
-                className="nav-btn"
-              >
-                →
-              </button>
-            </div>
-          )}
         </div>
       </main>
     </div>

@@ -40,13 +40,21 @@ body {
   color: #fff;
 }
 
-.pallet-selector select {
+.pallet-type-select {
+  width: 100%;
   background: #000;
   color: #fff;
   border: 1px solid var(--border);
-  padding: 5px 10px;
+  padding: 10px;
   border-radius: 6px;
-  margin-left: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.pallet-type-select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .main-grid {
@@ -55,15 +63,23 @@ body {
   overflow: hidden;
 }
 
+.visualizer {
+  flex: 1;
+  position: relative;
+  background: #000;
+  order: 1;
+}
+
 .controls {
   width: 360px;
   background: var(--bg);
-  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   padding: 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  order: 2;
 }
 
 .card {
@@ -359,12 +375,6 @@ body {
   color: var(--subtext);
 }
 
-.visualizer {
-  flex: 1;
-  position: relative;
-  background: #000;
-}
-
 .vis-overlay {
   position: absolute;
   top: 20px;
@@ -517,16 +527,6 @@ body {
     height: 30px !important;
   }
 
-  .pallet-selector {
-    width: 100%;
-  }
-
-  .pallet-selector select {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-
   .main-grid {
     flex-direction: column;
     overflow: visible;
@@ -535,11 +535,12 @@ body {
   .controls {
     width: 100%;
     min-width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-left: none;
+    border-top: 1px solid var(--border);
     padding: 15px;
     overflow-y: visible;
     max-height: none;
+    order: 2;
   }
 
   .controls * {
@@ -549,7 +550,7 @@ body {
   .visualizer {
     height: 60vh;
     min-height: 400px;
-    order: -1; /* Show 3D view first on mobile */
+    order: 1;
   }
 
   .vis-overlay {
@@ -688,6 +689,12 @@ body {
   .group-title {
     font-size: 0.75rem;
     margin-top: 12px;
+  }
+
+  /* Pallet type selector */
+  .pallet-type-select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 12px;
   }
 
   /* Search input */
