@@ -142,13 +142,13 @@ function packSinglePallet(queue, pallet, presetOrientations = new Map()) {
                         score -= 2000000; // Bonus for being next to other tanks on ground
                     }
                 } else if (isWaterRowerRail) {
-                    // WaterRower rail boxes MUST stack on top of their own tank
-                    if (maxY > 0 && isOnSameProductTank) {
-                        score -= 20000000; // Massive bonus for stacking on own tank
-                    } else if (maxY === 0) {
-                        score += 100000000; // Massive penalty for ground placement
+                    // WaterRower rail boxes should go on ground level, NOT on top of tanks
+                    if (maxY === 0) {
+                        score -= 10000000; // Strong bonus for ground placement
+                    } else if (isOnSameProductTank || isOnOtherWaterRowerTank) {
+                        score += 100000000; // Massive penalty for stacking on tanks
                     } else {
-                        score += 50000000; // Massive penalty for stacking on wrong items
+                        score += 50000000; // Large penalty for stacking on other items
                     }
                 } else {
                     // PRIORITY 1: Stack identical items directly on top of each other
