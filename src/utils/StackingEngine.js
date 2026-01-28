@@ -12,8 +12,8 @@ export const PALLET_TYPES = {
 
 const STEP = 25;
 const MAX_HEIGHT = 2600;
-const OVERHANG_X = 1000;
-const OVERHANG_Z = 0;
+const OVERHANG_X = 200; // 100mm overhang per side
+const OVERHANG_Z = 200; // 100mm overhang per side (even on all sides)
 
 function packSinglePallet(queue, pallet, presetOrientations = new Map()) {
     const arranged = [];
