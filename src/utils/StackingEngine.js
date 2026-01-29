@@ -430,8 +430,9 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         
         console.log(`\n=== Iteration ${attemptCount} ===`);
         console.log(`Remaining boxes: ${remaining.length}, Current height: ${currentHeight}mm`);
-        console.log(`S4 tanks remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
-        console.log(`S4 rails remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 1).length}`);
+        console.log(`S4 tanks: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
+        console.log(`A1 tanks: ${remaining.filter(b => b.productId === 'wr-a1' && b.boxIndex === 0).length}`);
+        console.log(`Rails: ${remaining.filter(b => b.boxIndex === 1).length}`);
         
         // Group all boxes by height
         const heightGroups = {};
@@ -501,7 +502,7 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         );
         
         console.log(`packLayer returned: ${placed.length} placed, ${layerRemaining.length} remaining from bestGroup`);
-        console.log(`Placed S4 tanks: ${placed.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
+        console.log(`Placed tanks: ${placed.filter(b => b.boxIndex === 0).length}`);
 
         if (placed.length === 0) {
             // Couldn't place anything, try smaller boxes
@@ -514,8 +515,7 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
             canPlaceOnLayer(box, layers.length > 0 ? layers[layers.length - 1] : [], pallet.width, pallet.depth, strategy)
         );
         
-        console.log(`After validation: ${validPlaced.length} valid placed`);
-        console.log(`Valid S4 tanks: ${validPlaced.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
+        console.log(`After validation: ${validPlaced.length} valid, ${layerRemaining.length} couldn't fit`);
 
         if (validPlaced.length === 0) {
             // Layer not stable, skip this height group
@@ -532,9 +532,20 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         layers.push(layer);
         currentHeight += bestGroup.height;
 
-        // Update remaining boxes
+        // Update remaining boxes: remove validPlaced, but keep items that weren't in bestGroup OR were in layerRemaining
         const placedIds = new Set(validPlaced.map(b => b.id));
-        remaining = remaining.filter(b => !placedIds.has(b.id));
+        const bestGroupIds = new Set(bestGroup.boxes.map(b => b.id));
+        
+        // Keep boxes that:
+        // 1. Were not in bestGroup at all, OR
+        // 2. Were in bestGroup but weren't successfully placed (i.e., in layerRemaining)
+        remaining = remaining.filter(b => {
+            if (!bestGroupIds.has(b.id)) return true; // Not in bestGroup, keep it
+            return !placedIds.has(b.id); // Was in bestGroup, keep if not placed
+        });
+        
+        console.log(`After update: ${remaining.length} boxes remaining`);
+        console.log(`Remaining tanks: ${remaining.filter(b => b.boxIndex === 0).length}`);
     }
 
     // Flatten layers into arranged items with proper 3D positions
