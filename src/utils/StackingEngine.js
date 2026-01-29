@@ -211,12 +211,16 @@ function packLayer(boxes, palletWidth, palletDepth, allowedOverhang = OVERHANG_T
                     tempPlacement.width <= effectiveW && 
                     tempPlacement.depth <= effectiveD) {
                     
-                    // For tank boxes, heavily penalize overhang
+                    // For tank boxes, allow reasonable overhang (up to 100mm total is fine for freight)
                     let overhangPenalty = 0;
                     if (isWaterRowerTank) {
                         const xOverhang = Math.max(0, (tempPlacement.x + tempPlacement.width) - palletWidth);
                         const zOverhang = Math.max(0, (tempPlacement.z + tempPlacement.depth) - palletDepth);
-                        overhangPenalty = (xOverhang + zOverhang) * 10000; // Huge penalty for overhang on tanks
+                        const totalOverhang = xOverhang + zOverhang;
+                        // Only penalize if overhang exceeds 100mm
+                        if (totalOverhang > 100) {
+                            overhangPenalty = (totalOverhang - 100) * 5000;
+                        }
                     }
                     
                     // Score: prefer orientations that maximize footprint usage (taller is better)
@@ -456,18 +460,18 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
                 }
             }
         } else {
-            // For hybrid/stable: prioritize WaterRower tanks if available, otherwise pick largest group
+            // For hybrid/stable: ALWAYS prioritize WaterRower tanks until all are placed
             const tankBoxes = remaining.filter(b => 
                 (b.productId === 'wr-s4' || b.productId === 'wr-a1') && b.boxIndex === 0
             );
             
             if (tankBoxes.length > 0) {
-                // Always prioritize tank boxes first
+                // Always prioritize tank boxes first - keep stacking until all tanks are placed
                 const tankHeight = tankBoxes[0].height;
                 bestGroup = { height: tankHeight, boxes: tankBoxes };
-                console.log(`Prioritizing ${tankBoxes.length} tank boxes`);
+                console.log(`Prioritizing ${tankBoxes.length} tank boxes (continuing tank layers)`);
             } else {
-                // No tanks, pick largest height group
+                // No more tanks, now pack rails or other items
                 let maxCount = 0;
                 for (const [height, group] of Object.entries(heightGroups)) {
                     if (group.length > maxCount) {
@@ -490,7 +494,7 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         
         const layerOverhang = strategy === 'lowest' ? 
             0 : // NO overhang in footprint mode - strict pallet bounds
-            hasTanks ? 50 : // Minimal overhang for tank layers (5cm)
+            hasTanks ? 100 : // Allow 10cm overhang for tank layers (2 tanks side by side)
             (layers.length === 0 ? OVERHANG_TOLERANCE * 2 : OVERHANG_TOLERANCE);
             
         const { placed, remaining: layerRemaining } = packLayer(
