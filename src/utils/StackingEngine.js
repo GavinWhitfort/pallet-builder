@@ -433,78 +433,45 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         console.log(`S4 tanks remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
         console.log(`S4 rails remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 1).length}`);
         
-        // Check if we have boxes from the same product with different heights
-        // These should be packed together in their own layers, not mixed
-        const productGroups = {};
-        const productHeights = {};
-        
+        // Group all boxes by height
+        const heightGroups = {};
         for (const box of remaining) {
-            const pid = box.productId || box.id;
-            if (!productGroups[pid]) {
-                productGroups[pid] = [];
-                productHeights[pid] = new Set();
-            }
-            productGroups[pid].push(box);
-            productHeights[pid].add(box.height);
+            const h = box.height;
+            if (!heightGroups[h]) heightGroups[h] = [];
+            heightGroups[h].push(box);
         }
-        
-        // Find multi-box products (same product with different heights)
-        const multiBoxProducts = Object.entries(productHeights)
-            .filter(([pid, heights]) => heights.size > 1)
-            .map(([pid]) => pid);
-        
+
+        // Pick the best height group based on strategy
         let bestGroup = null;
         
-        // If we have multi-box products, pack them together first
-        if (multiBoxProducts.length > 0) {
-            const targetProduct = multiBoxProducts[0];
-            const productBoxes = productGroups[targetProduct];
-            
-            // Group by height within this product
-            const heightGroups = {};
-            for (const box of productBoxes) {
-                const h = box.height;
-                if (!heightGroups[h]) heightGroups[h] = [];
-                heightGroups[h].push(box);
-            }
-            
-            // Pack the most appropriate height group for this product
-            if (strategy === 'lowest') {
-                // Pack shortest boxes first to minimize footprint
-                const minHeight = Math.min(...Object.keys(heightGroups).map(Number));
-                bestGroup = { height: minHeight, boxes: heightGroups[minHeight] };
-            } else {
-                // Pack heaviest/tallest boxes first for stability
-                const maxHeight = Math.max(...Object.keys(heightGroups).map(Number));
-                bestGroup = { height: maxHeight, boxes: heightGroups[maxHeight] };
+        if (strategy === 'lowest') {
+            // In "lowest" (minimize footprint) mode, prefer groups that maximize vertical space
+            // Pick largest group
+            let maxCount = 0;
+            for (const [height, group] of Object.entries(heightGroups)) {
+                if (group.length > maxCount) {
+                    maxCount = group.length;
+                    bestGroup = { height: Number(height), boxes: group };
+                }
             }
         } else {
-            // Standard logic: group all boxes by height
-            const heightGroups = {};
-            for (const box of remaining) {
-                const h = box.height;
-                if (!heightGroups[h]) heightGroups[h] = [];
-                heightGroups[h].push(box);
-            }
-
-            // Pick the best height group based on strategy
-            let maxCount = 0;
+            // For hybrid/stable: prioritize WaterRower tanks if available, otherwise pick largest group
+            const tankBoxes = remaining.filter(b => 
+                (b.productId === 'wr-s4' || b.productId === 'wr-a1') && b.boxIndex === 0
+            );
             
-            for (const [height, group] of Object.entries(heightGroups)) {
-                const h = Number(height);
-                
-                if (strategy === 'lowest') {
-                    // In "lowest" (minimize footprint) mode, prefer groups that maximize vertical space
-                    // We want to stack HIGH, so any height is fine - just pick largest group
+            if (tankBoxes.length > 0) {
+                // Always prioritize tank boxes first
+                const tankHeight = tankBoxes[0].height;
+                bestGroup = { height: tankHeight, boxes: tankBoxes };
+                console.log(`Prioritizing ${tankBoxes.length} tank boxes`);
+            } else {
+                // No tanks, pick largest height group
+                let maxCount = 0;
+                for (const [height, group] of Object.entries(heightGroups)) {
                     if (group.length > maxCount) {
                         maxCount = group.length;
-                        bestGroup = { height: h, boxes: group };
-                    }
-                } else {
-                    // Standard mode - prefer most common height
-                    if (group.length > maxCount) {
-                        maxCount = group.length;
-                        bestGroup = { height: h, boxes: group };
+                        bestGroup = { height: Number(height), boxes: group };
                     }
                 }
             }
