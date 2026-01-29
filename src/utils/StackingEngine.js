@@ -170,6 +170,7 @@ function packLayer(boxes, palletWidth, palletDepth, allowedOverhang = OVERHANG_T
     }
     
     const freeRects = new FreeRectangles(effectiveW, effectiveD);
+    const placedIndices = new Set();
 
     for (let i = 0; i < remaining.length; i++) {
         const box = remaining[i];
@@ -184,7 +185,7 @@ function packLayer(boxes, palletWidth, palletDepth, allowedOverhang = OVERHANG_T
             ).length;
             
             if (tanksInLayer >= 2) {
-                continue; // Skip this box, max 2 tanks per layer
+                continue; // Skip this box for this layer, will be available for next layer
             }
         }
         
@@ -253,13 +254,15 @@ function packLayer(boxes, palletWidth, palletDepth, allowedOverhang = OVERHANG_T
             }
             
             placed.push(placedBox);
+            placedIndices.add(i);
             freeRects.placeBox(placement);
-            remaining.splice(i, 1);
-            i--; // Adjust index after removal
         }
     }
 
-    return { placed, remaining };
+    // Filter out placed items from remaining
+    const stillRemaining = remaining.filter((_, idx) => !placedIndices.has(idx));
+
+    return { placed, remaining: stillRemaining };
 }
 
 // Calculate center of gravity for a layer
