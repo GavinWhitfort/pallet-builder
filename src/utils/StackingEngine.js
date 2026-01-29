@@ -367,37 +367,83 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
     while (remaining.length > 0 && currentHeight < MAX_HEIGHT && attemptCount < maxAttempts) {
         attemptCount++;
         
-        // Group boxes by similar height for efficient layering
-        const heightGroups = {};
-        for (const box of remaining) {
-            const h = box.height;
-            if (!heightGroups[h]) heightGroups[h] = [];
-            heightGroups[h].push(box);
-        }
-
-        // Pick the best height group based on strategy
-        let bestGroup = null;
-        let maxCount = 0;
+        // Check if we have boxes from the same product with different heights
+        // These should be packed together in their own layers, not mixed
+        const productGroups = {};
+        const productHeights = {};
         
-        for (const [height, group] of Object.entries(heightGroups)) {
-            const h = Number(height);
+        for (const box of remaining) {
+            const pid = box.productId || box.id;
+            if (!productGroups[pid]) {
+                productGroups[pid] = [];
+                productHeights[pid] = new Set();
+            }
+            productGroups[pid].push(box);
+            productHeights[pid].add(box.height);
+        }
+        
+        // Find multi-box products (same product with different heights)
+        const multiBoxProducts = Object.entries(productHeights)
+            .filter(([pid, heights]) => heights.size > 1)
+            .map(([pid]) => pid);
+        
+        let bestGroup = null;
+        
+        // If we have multi-box products, pack them together first
+        if (multiBoxProducts.length > 0) {
+            const targetProduct = multiBoxProducts[0];
+            const productBoxes = productGroups[targetProduct];
             
+            // Group by height within this product
+            const heightGroups = {};
+            for (const box of productBoxes) {
+                const h = box.height;
+                if (!heightGroups[h]) heightGroups[h] = [];
+                heightGroups[h].push(box);
+            }
+            
+            // Pack the most appropriate height group for this product
             if (strategy === 'lowest') {
-                // In "lowest" (minimize footprint) mode, prefer groups that maximize vertical space
-                // We want to stack HIGH, so any height is fine - just pick largest group
-                if (group.length > maxCount) {
-                    maxCount = group.length;
-                    bestGroup = { height: h, boxes: group };
-                }
+                // Pack shortest boxes first to minimize footprint
+                const minHeight = Math.min(...Object.keys(heightGroups).map(Number));
+                bestGroup = { height: minHeight, boxes: heightGroups[minHeight] };
             } else {
-                // Standard mode - prefer most common height
-                if (group.length > maxCount) {
-                    maxCount = group.length;
-                    bestGroup = { height: h, boxes: group };
+                // Pack heaviest/tallest boxes first for stability
+                const maxHeight = Math.max(...Object.keys(heightGroups).map(Number));
+                bestGroup = { height: maxHeight, boxes: heightGroups[maxHeight] };
+            }
+        } else {
+            // Standard logic: group all boxes by height
+            const heightGroups = {};
+            for (const box of remaining) {
+                const h = box.height;
+                if (!heightGroups[h]) heightGroups[h] = [];
+                heightGroups[h].push(box);
+            }
+
+            // Pick the best height group based on strategy
+            let maxCount = 0;
+            
+            for (const [height, group] of Object.entries(heightGroups)) {
+                const h = Number(height);
+                
+                if (strategy === 'lowest') {
+                    // In "lowest" (minimize footprint) mode, prefer groups that maximize vertical space
+                    // We want to stack HIGH, so any height is fine - just pick largest group
+                    if (group.length > maxCount) {
+                        maxCount = group.length;
+                        bestGroup = { height: h, boxes: group };
+                    }
+                } else {
+                    // Standard mode - prefer most common height
+                    if (group.length > maxCount) {
+                        maxCount = group.length;
+                        bestGroup = { height: h, boxes: group };
+                    }
                 }
             }
         }
-
+        
         if (!bestGroup || currentHeight + bestGroup.height > MAX_HEIGHT) {
             break; // Can't fit any more layers
         }
