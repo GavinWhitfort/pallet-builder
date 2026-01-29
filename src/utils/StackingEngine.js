@@ -428,6 +428,11 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
     while (remaining.length > 0 && currentHeight < MAX_HEIGHT && attemptCount < maxAttempts) {
         attemptCount++;
         
+        console.log(`\n=== Iteration ${attemptCount} ===`);
+        console.log(`Remaining boxes: ${remaining.length}, Current height: ${currentHeight}mm`);
+        console.log(`S4 tanks remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
+        console.log(`S4 rails remaining: ${remaining.filter(b => b.productId === 'wr-s4' && b.boxIndex === 1).length}`);
+        
         // Check if we have boxes from the same product with different heights
         // These should be packed together in their own layers, not mixed
         const productGroups = {};
@@ -527,6 +532,9 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
             layerOverhang,
             strategy
         );
+        
+        console.log(`packLayer returned: ${placed.length} placed, ${layerRemaining.length} remaining from bestGroup`);
+        console.log(`Placed S4 tanks: ${placed.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
 
         if (placed.length === 0) {
             // Couldn't place anything, try smaller boxes
@@ -538,6 +546,9 @@ function packSinglePallet(boxes, pallet, strategy = 'hybrid') {
         const validPlaced = placed.filter(box => 
             canPlaceOnLayer(box, layers.length > 0 ? layers[layers.length - 1] : [], pallet.width, pallet.depth, strategy)
         );
+        
+        console.log(`After validation: ${validPlaced.length} valid placed`);
+        console.log(`Valid S4 tanks: ${validPlaced.filter(b => b.productId === 'wr-s4' && b.boxIndex === 0).length}`);
 
         if (validPlaced.length === 0) {
             // Layer not stable, skip this height group
