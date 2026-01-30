@@ -11,9 +11,9 @@ export const PALLET_TYPES = {
     PLASTIC_STD: { name: 'Plastic Unit', width: 1100, depth: 1000, height: 125, weight: 15 },
 };
 
-// RULE #1: Overhang limits
-const OVERHANG_FRONT_BACK = 200; // 20cm each side = 40cm total
-const OVERHANG_SIDES = 1000; // 1m each side = 2m total
+// RULE #1: NO OVERHANG - everything must fit within pallet footprint
+const OVERHANG_FRONT_BACK = 0;
+const OVERHANG_SIDES = 0;
 
 // RULE #4: Max height
 const MAX_HEIGHT = 2300; // 2.3m
@@ -21,6 +21,7 @@ const MAX_HEIGHT = 2300; // 2.3m
 /**
  * RULE #3: Rotation to minimize footprint
  * Returns best orientation (normal or rotated 90°)
+ * Must fit within pallet bounds (no overhang)
  */
 function getBestOrientation(box, palletWidth, palletDepth) {
     const orientations = [
@@ -28,12 +29,9 @@ function getBestOrientation(box, palletWidth, palletDepth) {
         { w: box.depth, d: box.width, h: box.height, rotated: true }
     ];
     
-    const maxWidth = palletWidth + OVERHANG_SIDES * 2;
-    const maxDepth = palletDepth + OVERHANG_FRONT_BACK * 2;
-    
-    // Filter to orientations that fit
+    // Filter to orientations that fit within strict pallet bounds
     const validOrientations = orientations.filter(o => 
-        o.w <= maxWidth && o.d <= maxDepth
+        o.w <= palletWidth && o.d <= palletDepth
     );
     
     if (validOrientations.length === 0) return null;
@@ -71,22 +69,11 @@ function canStackOn(item, layerBelow) {
 /**
  * RULE #5: Group products - place multiples side by side
  * Returns { placed, notPlaced } arrays
- * Prioritizes stacking within pallet footprint (no overhang) first
+ * NO OVERHANG - everything must fit within strict pallet footprint
  */
 function layoutProductGroup(boxes, palletWidth, palletDepth, offsetX = 0, offsetZ = 0) {
-    // Try strict pallet bounds first (no overhang)
-    const strictResult = tryLayoutWithBounds(boxes, palletWidth, palletDepth, palletWidth, palletDepth);
-    
-    // If all boxes fit within strict bounds, use that
-    if (strictResult.notPlaced.length === 0) {
-        return strictResult;
-    }
-    
-    // Otherwise, allow overhang for items that don't fit
-    const maxWidthAllowed = palletWidth + OVERHANG_SIDES * 2;
-    const maxDepthAllowed = palletDepth + OVERHANG_FRONT_BACK * 2;
-    
-    return tryLayoutWithBounds(boxes, palletWidth, palletDepth, maxWidthAllowed, maxDepthAllowed);
+    // Strict pallet bounds only - no overhang
+    return tryLayoutWithBounds(boxes, palletWidth, palletDepth, palletWidth, palletDepth);
 }
 
 /**
