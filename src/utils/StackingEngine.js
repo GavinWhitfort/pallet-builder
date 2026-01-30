@@ -71,11 +71,28 @@ function canStackOn(item, layerBelow) {
 /**
  * RULE #5: Group products - place multiples side by side
  * Returns { placed, notPlaced } arrays
+ * Prioritizes stacking within pallet footprint (no overhang) first
  */
 function layoutProductGroup(boxes, palletWidth, palletDepth, offsetX = 0, offsetZ = 0) {
+    // Try strict pallet bounds first (no overhang)
+    const strictResult = tryLayoutWithBounds(boxes, palletWidth, palletDepth, palletWidth, palletDepth);
+    
+    // If all boxes fit within strict bounds, use that
+    if (strictResult.notPlaced.length === 0) {
+        return strictResult;
+    }
+    
+    // Otherwise, allow overhang for items that don't fit
     const maxWidthAllowed = palletWidth + OVERHANG_SIDES * 2;
     const maxDepthAllowed = palletDepth + OVERHANG_FRONT_BACK * 2;
     
+    return tryLayoutWithBounds(boxes, palletWidth, palletDepth, maxWidthAllowed, maxDepthAllowed);
+}
+
+/**
+ * Helper: Try to layout boxes within specified bounds
+ */
+function tryLayoutWithBounds(boxes, palletWidth, palletDepth, maxWidth, maxDepth) {
     // Build rows - checking both width and depth constraints
     const rows = [];
     let currentRow = [];
@@ -89,10 +106,10 @@ function layoutProductGroup(boxes, palletWidth, palletDepth, offsetX = 0, offset
         if (!orient) continue;
         
         // Check if adding this box exceeds max width
-        if (currentRowWidth + orient.w > maxWidthAllowed && currentRow.length > 0) {
+        if (currentRowWidth + orient.w > maxWidth && currentRow.length > 0) {
             // Check if we can fit another row depth-wise
             const currentRowDepth = Math.max(...currentRow.map(b => b.depth));
-            if (totalDepthUsed + currentRowDepth + orient.d > maxDepthAllowed) {
+            if (totalDepthUsed + currentRowDepth + orient.d > maxDepth) {
                 // Can't fit more rows, stop here
                 break;
             }
@@ -120,7 +137,7 @@ function layoutProductGroup(boxes, palletWidth, palletDepth, offsetX = 0, offset
     // Add last row if it fits
     if (currentRow.length > 0) {
         const currentRowDepth = Math.max(...currentRow.map(b => b.depth));
-        if (totalDepthUsed + currentRowDepth <= maxDepthAllowed) {
+        if (totalDepthUsed + currentRowDepth <= maxDepth) {
             rows.push(currentRow);
         } else {
             // Last row doesn't fit, remove those boxes from placedBoxes
